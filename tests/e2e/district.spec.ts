@@ -22,7 +22,7 @@ async function building(page:Page,b:typeof BUILDINGS[number],touch:boolean,keybo
   const pin=page.getByRole('button',{name:`${b.name}. ${buildingState(b,1)}. Level ${b.level}`,exact:true});await pin.scrollIntoViewIfNeeded();
   if(keyboard){await pin.focus();await page.keyboard.press('Enter');}else if(touch)await pin.tap();else await pin.click();
   const dialog=page.getByRole('dialog');await expect(dialog).toBeVisible();await expect(dialog.getByRole('heading',{name:b.name,exact:true})).toBeVisible();
-  if(b.level>1)await expect(dialog).toContainText(`Requires level ${b.level}`);else if(b.id!=='hq')await expect(dialog).toContainText('Stage 2 coming soon');
+  if(b.level>1)await expect(dialog).toContainText(`Requires level ${b.level}`);else if(b.id==='jobs')await expect(dialog).toContainText('Small favors. Real progress.');else if(b.id!=='hq')await expect(dialog).toContainText('Future district preview');
   await page.keyboard.press('Escape');await expect(dialog).not.toBeVisible();await expect(pin).toBeFocused();
 }
 for(const [width,height] of [[320,844],[360,844],[390,844],[430,844],[844,390],[667,320],[1440,900],[1280,600],[720,450]])for(const theme of ['light','dark']){
@@ -61,7 +61,7 @@ for(const [width,height] of [[320,844],[360,844],[390,844],[430,844],[844,390],[
     expect(await page.locator('.map-scroll').evaluate(el=>({x:el.scrollLeft,y:el.scrollTop}))).toEqual(position);
     for(const section of ['Founder','Notices','Settings']){
       const button=nav(page).getByRole('button',{name:section,exact:true});if(testInfo.project.name==='mobile'){await button.tap();await expect(dialog).toBeVisible();await page.keyboard.press('Escape');await expect(button).toBeFocused();}await button.focus();await page.keyboard.press('Enter');await expect(dialog).toBeVisible();await expect(nav(page).locator(`[aria-label=${section}]`)).toHaveAttribute('aria-current','page');await expect(dialog.getByRole('button',{name:'Close panel',exact:true})).toBeFocused();
-      if(section==='Founder'){await expect(dialog).toContainText('500.00 EC');await expect(dialog).toContainText('Progression will arrive');}
+      if(section==='Founder'){await expect(dialog).toContainText('500.00 EC');await expect(dialog).toContainText('Every 100 XP');}
       if(section==='Notices')await expect(dialog).toContainText('No notifications yet');
       if(section==='Settings'){await expect(dialog.getByRole('button',{name:'Sign out',exact:true})).toBeVisible();await dialog.getByRole('button',{name:theme==='light'?'Use dark mode':'Use light mode',exact:true}).click();await expect(page.locator('html')).toHaveAttribute('data-theme',theme==='light'?'dark':'light');await dialog.getByRole('button',{name:theme==='light'?'Use light mode':'Use dark mode',exact:true}).click();}
       await accessible(page);await dialog.getByRole('button',{name:'Back to the district',exact:true}).scrollIntoViewIfNeeded();await expect(dialog.getByRole('button',{name:'Back to the district',exact:true})).toBeInViewport();await page.keyboard.press('Escape');await expect(dialog).not.toBeVisible();await expect(button).toBeFocused();

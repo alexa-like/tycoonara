@@ -14,6 +14,6 @@ test('integer EC hundredths are formatted without creating money', () => { asser
 test('all required access gates remain visible at level one', () => {
   assert.deepEqual(BUILDINGS.map(b => b.level),[1,1,1,2,3,4,7,10,15,20,25]);
   assert.equal(buildingState(BUILDINGS[0],1),'Available');
-  assert.equal(buildingState(BUILDINGS[1],1),'Preview');
+  assert.equal(buildingState(BUILDINGS[1],1),'Available');
   assert.equal(buildingState(BUILDINGS[3],1),'Locked');
 });

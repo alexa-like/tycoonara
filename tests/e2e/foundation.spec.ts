@@ -94,8 +94,8 @@ for(const theme of ['light','dark']) test(`signup, email verification, profile, 
   await expect(page.getByLabel('Founder statistics')).toContainText(`F_${testInfo.project.name}_${theme}`);
   await expect(page.getByLabel('Founder statistics')).toContainText('50');
   await accessible(page);
-  await page.getByRole('button',{name:'Job Center. Preview. Level 1',exact:true}).click();
-  await expect(page.getByRole('dialog')).toContainText('Stage 2 coming soon');
+  await page.getByRole('button',{name:'Marketplace. Preview. Level 1',exact:true}).click();
+  await expect(page.getByRole('dialog')).toContainText('Future district preview');
   await page.keyboard.press('Escape');
   await page.getByRole('button',{name:'Factory. Locked. Level 3',exact:true}).click();
   await expect(page.getByRole('dialog')).toContainText('Requires level 3');
@@ -105,6 +105,30 @@ for(const theme of ['light','dark']) test(`signup, email verification, profile, 
   await expect(page.getByLabel('Founder statistics')).toContainText('500.00');
   await page.goto('/onboarding');
   await expect(page).toHaveURL(/\/game/);
+  // Real NPC job flow against the isolated Supabase database, never a mocked reward.
+  await page.getByRole('button',{name:'Job Center. Available. Level 1',exact:true}).click();
+  const jobs=page.getByRole('region',{name:'NPC jobs'});
+  await expect(jobs.getByRole('button',{name:'Start Welcome delivery',exact:true})).toBeEnabled();
+  await expect(jobs.getByRole('button',{name:'Unlocks at level 2',exact:true})).toBeDisabled();
+  await accessible(page);
+  await page.screenshot({path:testInfo.outputPath(`jobs-board-${theme}.png`),fullPage:true});
+  await jobs.getByRole('button',{name:'Start Welcome delivery',exact:true}).click();
+  await expect(jobs.getByRole('button',{name:'Claim reward',exact:true})).toBeDisabled();
+  await expect(jobs).toContainText('No need to keep this panel open.');
+  await page.keyboard.press('Escape');await page.reload();
+  await page.getByRole('button',{name:'Job Center. Available. Level 1',exact:true}).click();
+  await expect(jobs.locator('.job-active')).toBeVisible();
+  await expect(jobs.getByRole('button',{name:'Claim reward',exact:true})).toBeEnabled({timeout:20000});
+  await accessible(page);
+  await page.screenshot({path:testInfo.outputPath(`jobs-ready-${theme}.png`),fullPage:true});
+  await jobs.getByRole('button',{name:'Claim reward',exact:true}).click();
+  await expect(jobs.getByRole('status')).toContainText('Saved! +1.25 EC and +25 XP');
+  await expect(page.getByLabel('Founder statistics')).toContainText('501.25');
+  await expect(jobs.locator('.job-receipts')).toContainText('+1.25 EC');
+  await expect(jobs.getByRole('button',{name:'Start Welcome delivery',exact:true})).toBeDisabled();
+  await accessible(page);
+  await page.screenshot({path:testInfo.outputPath(`jobs-receipt-${theme}.png`),fullPage:true});
+  await page.keyboard.press('Escape');
   await page.getByRole('navigation',{name:'District navigation'}).getByRole('button',{name:'Settings',exact:true}).click();
   await page.getByRole('button',{name:'Sign out',exact:true}).click();
   await expect(page).toHaveURL('/');
@@ -131,5 +155,5 @@ for(const theme of ['light','dark']) test(`signup, email verification, profile, 
   await page.getByLabel('Password',{exact:true}).fill(`${password}new`);
   await page.getByRole('button',{name:'Enter Tycoonara',exact:true}).click();
   await expect(page).toHaveURL(/\/game/);
-  await expect(page.getByLabel('Founder statistics')).toContainText('500.00');
+  await expect(page.getByLabel('Founder statistics')).toContainText('501.25');
 });

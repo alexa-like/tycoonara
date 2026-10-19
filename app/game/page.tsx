@@ -7,5 +7,5 @@ export default async function Game() {
   if (!player) redirect('/onboarding');
   const { data: wallet, error } = await supabase.from('wallets').select('balance_subunits').eq('player_id',player.id).single();
   if (error || !wallet) throw new Error('Unable to load your founding balance. Please retry.');
-  return <main id="main" className="game-layout"><District player={player} balance={Number(wallet.balance_subunits)} /></main>;
+  return <main id="main" className="game-layout"><District player={player} balance={Number(wallet.balance_subunits)} jobsEnabled={process.env.TYCOONARA_JOBS_ENABLED==='true'} /></main>;
 }
