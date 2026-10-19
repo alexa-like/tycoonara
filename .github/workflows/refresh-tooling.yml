@@ -17,7 +17,8 @@ jobs:
           node-version: '24'
       - name: Pin compatible maintained tooling and regenerate lock
         run: |
-          npm install --ignore-scripts --save-dev --save-exact @playwright/test@latest @axe-core/playwright@4 @tailwindcss/postcss@4 tailwindcss@4 eslint@10 @types/react@19 @types/react-dom@19 @types/node@24 pg@8 typescript@5
+          npm uninstall --ignore-scripts eslint-config-next
+          npm install --ignore-scripts --save-dev --save-exact @eslint/js@10 typescript-eslint@latest @playwright/test@latest @axe-core/playwright@4 @tailwindcss/postcss@4 tailwindcss@4 eslint@10 @types/react@19 @types/react-dom@19 @types/node@24 pg@8 typescript@5
           npm audit
           npm run lint
           npm run typecheck

@@ -1,4 +1,9 @@
 import { defineConfig, globalIgnores } from 'eslint/config';
-import nextVitals from 'eslint-config-next/core-web-vitals';
-import nextTs from 'eslint-config-next/typescript';
-export default defineConfig([...nextVitals, ...nextTs, globalIgnores(['.next/**', 'node_modules/**', 'playwright-report/**', 'test-results/**', 'next-env.d.ts'])]);
+import js from '@eslint/js';
+import tseslint from 'typescript-eslint';
+export default defineConfig([
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+  { languageOptions: { globals: { process:'readonly', console:'readonly', window:'readonly', document:'readonly', localStorage:'readonly', Event:'readonly' } } },
+  globalIgnores(['.next/**','node_modules/**','playwright-report/**','test-results/**','next-env.d.ts']),
+]);
