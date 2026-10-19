@@ -17,7 +17,7 @@ async function emailLink(request: APIRequestContext, mailbox: string, purpose = 
     if (!message) return false;
     const detail = await (await request.get(`http://127.0.0.1:54324/api/v1/message/${message.ID}`)).json();
     const html = detail.HTML || detail.Text;
-    const match = html.match(/https?:\/\/[^\s"<>]*\/auth\/v1\/verify[^\s"<>]*/);
+    const match = html.match(/https?:\/\/[^\s"<>]*\/auth\/(?:v1\/verify|confirm)[^\s"<>]*/);
     link = match ? match[0].replaceAll('&amp;','&') : '';
     return Boolean(link);
   },{timeout:30000}).toBe(true);
@@ -84,7 +84,7 @@ for(const theme of ['light','dark']) test(`signup, email verification, profile, 
   await page.goto('/game');
   await expect(page).toHaveURL(/\/login/);
   await page.goto(await emailLink(request,mailbox));
-  await expect(page).toHaveURL(/\/onboarding/);
+  await expect.poll(()=>new URL(page.url()).pathname).toBe('/onboarding');
   await page.getByLabel('Your founder name').fill(`F_${testInfo.project.name}_${theme}`);
   await page.getByRole('radio',{name:'orchid'}).check();
   await accessible(page);

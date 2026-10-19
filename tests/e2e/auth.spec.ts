@@ -2,6 +2,9 @@ import {test,expect,type Page} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 async function layout(page:Page,width:number) {
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await expect(page.locator('#auth-welcome')).toBeVisible();
+  await expect(page.locator(`#auth-welcome .auth-${width<980?'mobile':'desktop'}-copy`)).toBeVisible();
+  await expect(page.locator(`#auth-welcome .auth-${width<980?'desktop':'mobile'}-copy`)).toBeHidden();
   const card=await page.locator('.auth-card').boundingBox();
   expect(card!.width).toBeGreaterThanOrEqual(Math.min(width-32,400));
   if(width<980){const intro=await page.locator('.auth-intro').boundingBox();expect(card!.y).toBeGreaterThanOrEqual(intro!.y+intro!.height-1);}
