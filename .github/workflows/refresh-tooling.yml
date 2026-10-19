@@ -1,4 +1,4 @@
-name: Pin compatible current test tooling
+name: Validate and pin current test tooling
 on:
   push:
     branches: [feat/stage-1-foundation]
