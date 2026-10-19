@@ -13,6 +13,7 @@ const browser=await chromium.launch();
 async function capture(version,source){
   assetRoot=source;
   if(version==='before')writeFileSync(join(source,'tests/presentation/app/layout.tsx'),"import RootLayout from '@/app/layout';\nexport const metadata={title:'Tycoonara baseline screenshot'};\nexport default RootLayout;\n");
+  writeFileSync(join(source,'tests/presentation/next.config.ts'),"export default {devIndicators:false,async rewrites(){return [{source:'/district.svg',destination:'http://localhost:3000/district.svg'}];}};\n");
   const server=spawn(process.execPath,[join(root,'node_modules/next/dist/bin/next'),'dev',join(source,'tests/presentation'),'--webpack','-p','3002'],{cwd:source,detached:true,stdio:['ignore','pipe','pipe'],env:{...process.env,NEXT_TELEMETRY_DISABLED:'1'}});
   let logs='';server.stdout.on('data',b=>logs+=b.toString());server.stderr.on('data',b=>logs+=b.toString());
   try{
@@ -25,6 +26,7 @@ async function capture(version,source){
       const name=`${version}-${width===1440?'desktop':'mobile'}-${width}-${theme}`;
       await page.screenshot({path:join(output,`${name}.png`)});await page.screenshot({path:join(output,`${name}-full.png`),fullPage:true});
       if(version==='after'&&width===390){
+        await page.locator('#district-map').scrollIntoViewIfNeeded();await page.screenshot({path:join(output,`${name}-overview.png`)});
         await page.getByRole('button',{name:'Explore streets',exact:true}).click();await page.locator('#district-map').scrollIntoViewIfNeeded();await page.screenshot({path:join(output,`${name}-explore.png`)});
         await page.getByRole('button',{name:'Whole district',exact:true}).click();await page.getByRole('button',{name:'Marketplace. Preview. Level 1',exact:true}).click();await page.screenshot({path:join(output,`${name}-panel.png`)});
       }
