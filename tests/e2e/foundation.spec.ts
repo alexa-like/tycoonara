@@ -105,6 +105,7 @@ for(const theme of ['light','dark']) test(`signup, email verification, profile, 
   await expect(page.getByLabel('Founder statistics')).toContainText('500.00');
   await page.goto('/onboarding');
   await expect(page).toHaveURL(/\/game/);
+  await page.getByRole('navigation',{name:'District navigation'}).getByRole('button',{name:'Settings',exact:true}).click();
   await page.getByRole('button',{name:'Sign out',exact:true}).click();
   await expect(page).toHaveURL('/');
   await page.goto('/game'); await expect(page).toHaveURL(/\/login/);

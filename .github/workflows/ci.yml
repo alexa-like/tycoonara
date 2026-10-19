@@ -133,7 +133,7 @@ jobs:
       - name: Check out the reviewed Stage 1 before image source
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
-          ref: 5188af93374b6d70a9124811c10653a28fa638ab
+          ref: d119ef866c2d7f1a3fc573d6e76506fbb6dc8a61
           path: before-source
           persist-credentials: false
       - name: Reuse the exact same locked renderer for the before source
