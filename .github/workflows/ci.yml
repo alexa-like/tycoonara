@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
+    paths-ignore: ['docs/screenshots/**']
 concurrency:
   group: stage1-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -97,3 +98,36 @@ jobs:
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/security.sql
       - name: Twelve concurrent bootstrap transactions
         run: node tests/concurrency.mjs
+
+  screenshots:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: local-ci-public-placeholder
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: Check out the reviewed Stage 1 before image source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 5188af93374b6d70a9124811c10653a28fa638ab
+          path: before-source
+          persist-credentials: false
+      - name: Reuse the exact same locked renderer for the before source
+        run: ln -s "$GITHUB_WORKSPACE/node_modules" before-source/node_modules
+      - name: Capture before/after mobile and desktop, light/dark
+        run: node scripts/capture-district.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: district-before-after-screenshots
+          path: test-results/district-screenshots/*.png
+          retention-days: 30

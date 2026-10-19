@@ -78,3 +78,13 @@ If the preview is protected by Vercel Authentication, use the authenticated Verc
 The original SVG district and four founder portraits were authored for this project; no stock art, WebGL or 3D assets. The eleven buildings keep the issue's exact level gates. The scrollable mobile map has a keyboard-accessible building directory; native dialogs support Escape, focus containment and return to the opener. Touch targets are at least 44px. Light mode is default, dark mode is user-selected, and reduced-motion preference is respected.
 
 Stage 1 ends here. Stage 2 requires explicit approval.
+
+## Stage 1 district refinement
+
+The district now opens in a fit-to-width overview. On narrow screens the numbered 44px map pins match an always-visible directory containing all eleven buildings. Explore streets switches to native two-axis touch scrolling, with bounded 100–150% zoom and a whole-district reset. Pin positions share the SVG coordinate system at every zoom. No gameplay progression or economy mutations have been added.
+
+At widths through 800 CSS pixels, the four-item bottom navigation stays fixed to the viewport, respects the device safe area, and has reserved content clearance. Larger screens retain the sidebar. Native building dialogs retain Escape/focus return, allow short-screen scrolling, and add a locate-on-map action.
+
+The original 19.7KB SVG has eleven differentiated architectural designs, layered roofs, a riverside park, fountain square, street crossings, trees, lighting and benches. Regenerate it with `node scripts/draw-district.mjs`. All artwork remains static and uses no WebGL or raster downloads.
+
+Playwright checks 320/360/390/430px touch viewports and 1440px desktop in both themes: all eleven panels by pointer and keyboard, overview bounds, target overlap, constrained zoom alignment, genuine touch panning, fixed bottom-bar clearance, building-directory access, modal scrolling, and WCAG checks. The existing auth, onboarding and SQL/concurrency suites remain in CI. A separate screenshots job captures before/after against the reviewed Stage 1 baseline using synthetic fixture data only; no live account cookies or tokens are recorded.
