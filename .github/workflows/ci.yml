@@ -18,21 +18,11 @@ jobs:
         with:
           node-version: '24'
       - name: Install exact dependencies
-        run: npm install --ignore-scripts
-      - name: Ensure lockfile is committed
-        run: |
-          if [ ! -f package-lock.json ]; then exit 1; fi
-          if git ls-files --error-unmatch package-lock.json >/dev/null 2>&1; then
-            git diff --exit-code -- package-lock.json
-          else
-            echo '::warning::Initial dependency lock generated; download dependency-lock artifact and commit before merging.'
-          fi
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: dependency-lock
-          path: package-lock.json
+        run: npm ci --ignore-scripts
       - name: Lint
         run: npm run lint
+      - name: Audit runtime dependencies
+        run: npm audit --omit=dev
       - name: Unit tests
         run: npm test
       - name: Start isolated local Supabase

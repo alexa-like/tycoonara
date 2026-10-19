@@ -35,8 +35,8 @@ do $$ begin
   begin perform public.bootstrap_player('ValidName','arbitrary'); raise exception 'FAIL avatar validation'; exception when invalid_parameter_value then null; end;
 end $$;
 select public.bootstrap_player('Founder_B','marigold');
-reset role;
 set constraints all immediate;
+reset role;
 do $$ begin
   if (select count(*) from private.ledger_transactions where player_id = '10000000-0000-4000-8000-000000000001') <> 1 then raise exception 'FAIL duplicate grant'; end if;
   if exists (select transaction_id from private.ledger_entries group by transaction_id having sum(amount_subunits) <> 0 or count(*) <> 2) then raise exception 'FAIL ledger balance'; end if;

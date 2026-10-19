@@ -12,7 +12,7 @@ Reuse these projects. Do not create replacements. Vercel already has the public 
 
 ## Local development
 
-Use Node 24 and Docker. After the initial dependency lock has been committed, use `npm ci`; for the first checkout without that file use `npm install` and commit the generated lockfile. All direct dependency versions are pinned in package.json.
+Use Node 24 and Docker. Use `npm ci` with the committed dependency lockfile. All direct dependency versions are pinned in package.json.
 
 ```sh
 npm ci
@@ -42,7 +42,7 @@ In local development the email capture UI is http://127.0.0.1:54324. CI uses the
 
 ## Database and audit model
 
-Migration `supabase/migrations/20261019055124_stage_1_foundation.sql` has been applied to the dedicated Tycoonara project. For another fresh local database use `supabase db reset`; to apply reviewed migrations to the existing linked remote use `supabase link --project-ref zxnmhjlpbvkgkxhkjyfc`, inspect `supabase migration list`, then `supabase db push` (do not replay an already-applied migration).
+The Stage 1 migrations in `supabase/migrations/` have been applied to the dedicated Tycoonara project. For another fresh local database use `supabase db reset`; to apply reviewed migrations to the existing linked remote use `supabase link --project-ref zxnmhjlpbvkgkxhkjyfc`, inspect `supabase migration list`, then `supabase db push` (do not replay an already-applied migration).
 
 `players` and `wallets` allow authenticated SELECT of one's own records only. They have no client INSERT/UPDATE/DELETE grants. Stage 1 levels, XP, reputation and balance also have exact-value CHECK constraints. Every public table has RLS. Authoritative data lives behind a narrowly scoped RPC: its public wrapper is SECURITY INVOKER; the privileged transaction is in the non-exposed `private` schema, with an empty search path, explicit `auth.uid()` and confirmed-email checks, no user_metadata authorization, and explicit EXECUTE grants.
 
@@ -69,7 +69,7 @@ Browser acceptance tests use desktop Chromium and a mobile touch viewport: landi
 
 ## Deployment and release
 
-Push the feature branch and open a PR. Vercel Git integration should build a **preview**, using its configured environment variables. Inspect build logs and test the exact preview. Production is gated on the acceptance checks and an approved merge; do not deploy untested code to production. No custom deployment workflow or production tokens are required.
+Push the feature branch and open a PR. Vercel Git integration should build a **preview**, using its configured environment variables. Inspect build logs and test the exact preview. The Vercel project currently has an ignored-build guard (`test "$VERCEL_ENV" = "production"`) because its first Git build unexpectedly targeted production. Keep that guard until the production branch is explicitly set to `main` in the Vercel project settings and the reviewed Stage 1 acceptance gate passes. Production is gated on those checks and an approved merge; do not deploy untested code to production. No custom deployment workflow or production tokens are required.
 
 If the preview is protected by Vercel Authentication, use the authenticated Vercel integration to inspect it or grant testers access. Do not disable protection automatically. A `vercel.app` URL alone does not establish a healthy deployment.
 
