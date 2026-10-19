@@ -1,0 +1,1 @@
+export default function Loading() { return <main id="main" className="onboarding" role="status"><span className="eyebrow">ONE MOMENT</span><h1>Opening the district…</h1><p>Your next chapter is just around the corner.</p></main>; }

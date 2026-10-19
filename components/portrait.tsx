@@ -1,0 +1,5 @@
+export function Avatar({ preset = 'cedar' }: { preset?: string }) {
+  const palette: Record<string, string[]> = { cedar:['#c38660','#233b36','#87b8a0'], marigold:['#e2ad82','#493128','#e1ba58'], tide:['#87563e','#182a3e','#8ba9c1'], orchid:['#bc805a','#392747','#b99cc6'] };
+  const [skin, hair, shirt] = palette[preset] || palette.cedar;
+  return <svg viewBox="0 0 80 80" role="img" aria-label={`${preset} founder portrait`} className="avatar"><rect width="80" height="80" rx="25" fill={shirt}/><path d="M8 80Q12 53 40 55Q68 53 72 80" fill={hair}/><path d="M33 49h14v16H33" fill={skin}/><ellipse cx="40" cy="33" rx="19" ry="23" fill={skin}/><path d="M20 33Q16 5 42 7Q67 7 61 37L55 23Q39 26 30 17L25 36Z" fill={hair}/><circle cx="33" cy="35" r="2" fill="#17283a"/><circle cx="48" cy="35" r="2" fill="#17283a"/><path d="M34 46Q40 51 47 45" fill="none" stroke="#523526" strokeWidth="2" strokeLinecap="round"/>{preset === 'tide' && <path d="M25 31h14v10H25Zm17 0h14v10H42Zm-3 4h3" fill="none" stroke="#17283a" strokeWidth="2"/>}{preset === 'orchid' && <path d="M56 12Q78 17 62 42" fill={hair}/>}</svg>;
+}
