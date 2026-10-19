@@ -1,0 +1,31 @@
+name: Pin compatible current test tooling
+on:
+  push:
+    branches: [feat/stage-1-foundation]
+    paths: [.github/workflows/refresh-tooling.yml]
+permissions:
+  contents: write
+jobs:
+  lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: feat/stage-1-foundation
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Pin compatible maintained tooling and regenerate lock
+        run: |
+          npm install --ignore-scripts --save-dev --save-exact @playwright/test@latest @axe-core/playwright@4 @tailwindcss/postcss@4 tailwindcss@4 eslint@10 @types/react@19 @types/react-dom@19 @types/node@24 pg@8 typescript@5
+          npm audit
+          npm run lint
+          npm run typecheck
+          cat package.json
+      - name: Commit validated dependency manifest and lock
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package.json package-lock.json
+          git commit -m 'Align browser and accessibility tooling; pin patched development dependencies'
+          git push origin HEAD:feat/stage-1-foundation
