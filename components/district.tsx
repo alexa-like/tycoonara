@@ -41,7 +41,7 @@ export function District({player,balance}:{player:Player;balance:number}) {
   const state=buildingState(building,player.level);
   useEffect(()=>{
     const element=map.current;if(!element)return;
-    const measure=()=>setFitWidth(Math.max(296,Math.min(element.clientWidth-28,(element.clientHeight-28)*1200/880)));
+    const measure=()=>setFitWidth(Math.max(292,Math.min(element.clientWidth-8,(element.clientHeight-8)*1200/880)));
     measure();const observer=new ResizeObserver(measure);observer.observe(element);return ()=>observer.disconnect();
   },[]);
   function open(next:Panel,section:Section=active) {
@@ -94,13 +94,13 @@ export function District({player,balance}:{player:Player;balance:number}) {
         <div className="map-controls"><div className="map-modes" role="group" aria-label="Map view"><button aria-pressed={mode==='overview'} onClick={()=>changeMode('overview')}>Whole district</button><button aria-pressed={mode==='explore'} onClick={()=>changeMode('explore')}>Explore streets</button></div>{mode==='explore'&&<div className="map-zoom" role="group" aria-label="Map zoom"><button aria-label="Zoom out" disabled={zoom<=1} onClick={()=>changeZoom(Math.max(1,zoom-.25))}>−</button><output aria-live="polite">{Math.round(zoom*100)}%</output><button aria-label="Zoom in" disabled={zoom>=1.5} onClick={()=>changeZoom(Math.min(1.5,zoom+.25))}>+</button></div>}</div>
       </div>
       {tip&&<div className="district-tip"><p>Your founder profile is saved. Tap a building or open Buildings to explore.</p><button aria-label="Dismiss district tip" onClick={()=>setTip(false)}><Icon name="close"/></button></div>}
-      <div id="district-map" className="map-scroll" ref={map} data-mode={mode} data-ready={fitWidth>0} role="region" aria-label={mode==='overview'?'Whole district map, all 11 buildings. Numbers match the building directory.':'Explore district map. Swipe or scroll in both directions. Tab to reach every building.'} tabIndex={0}>
-        <div className="map-canvas"><div className="map-world" style={{'--world-width':`${mode==='overview'?Math.max(296,fitWidth):1080*zoom}px`} as CSSProperties}>
+      <div id="district-map" className="map-scroll" ref={map} data-mode={mode} data-ready={fitWidth>0} role="region" aria-label={mode==='overview'?'Whole district map, all 11 buildings. Swipe or scroll on short screens. Numbers match the building directory.':'Explore district map. Swipe or scroll in both directions. Tab to reach every building.'} tabIndex={0}>
+        <div className="map-canvas"><div className="map-world" style={{'--world-width':`${mode==='overview'?Math.max(292,fitWidth):1080*zoom}px`} as CSSProperties}>
           <Image src="/district.svg" alt="Original illustrated Business District: eleven distinct buildings, a riverside park, tree-lined avenues, a golden-roofed headquarters and fountain square." width={1200} height={880} priority/>
           {BUILDINGS.map((b,index)=>{const status=buildingState(b,player.level);return <button key={b.id} ref={node=>{markerRefs.current[b.id]=node;}} className={`hotspot ${status.toLowerCase()}`} data-selected={selected===b.id} style={{left:`${b.x}%`,top:`${b.y}%`}} onClick={()=>openBuilding(b.id)} aria-haspopup="dialog" aria-label={`${b.name}. ${status}. Level ${b.level}`} title={`${b.name} · ${statusLabel(status,b.level)}`}><span className="site-number" aria-hidden="true">{String(index+1).padStart(2,'0')}</span></button>;})}
         </div></div>
       </div>
-      <div className="map-status"><span><i className="key-dot available"/>Available</span><span><i className="key-dot preview"/>Preview</span><span><i className="key-dot locked"/>Level locked</span><span className="map-instruction">{mode==='overview'?'11 buildings · Fit view':'Swipe / scroll to explore'}</span></div>
+      <div className="map-status"><span><i className="key-dot available"/>Available</span><span><i className="key-dot preview"/>Preview</span><span><i className="key-dot locked"/>Level locked</span><span className="map-instruction">{mode==='overview'?'11 buildings · Swipe if needed':'Swipe / scroll to explore'}</span></div>
     </section>
     <nav className="district-nav" aria-label="District navigation">{NAV.map(section=><button key={section} type="button" onClick={()=>navigate(section)} aria-label={title(section)} aria-current={active===section?'page':undefined} aria-haspopup={section==='district'?undefined:'dialog'} aria-expanded={section==='district'?undefined:active===section&&panel!==null} title={title(section)}><Icon name={section}/><span>{title(section)}</span></button>)}</nav>
     <dialog ref={dialog} className="game-panel building-dialog" aria-labelledby="building-title" onClose={closed}>

@@ -34,6 +34,9 @@ for(const [width,height] of [[320,844],[360,844],[390,844],[430,844],[844,390],[
     await expect(nav(page).getByRole('button')).toHaveCount(5);await expect(nav(page).getByRole('button')).toHaveText(['District','Buildings','Founder','Notices','Settings']);
     await expect(page.locator('.map-scroll')).toHaveAttribute('data-ready','true');
     await shell(page,width,height);await alignment(page);await accessible(page);
+    // Full island and pin targets fit on portrait phones; short views pan internally.
+    if(height>=600){const region=await page.locator('.map-scroll').boundingBox();for(const pin of await page.locator('.hotspot').all()){const box=await pin.boundingBox();expect(box!.x).toBeGreaterThanOrEqual(region!.x);expect(box!.x+box!.width).toBeLessThanOrEqual(region!.x+region!.width);expect(box!.y).toBeGreaterThanOrEqual(region!.y);expect(box!.y+box!.height).toBeLessThanOrEqual(region!.y+region!.height);}}
+
     if(testInfo.project.name==='mobile')await nav(page).getByRole('button',{name:'District',exact:true}).tap();
     await nav(page).getByRole('button',{name:'District',exact:true}).click();await nav(page).getByRole('button',{name:'District',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
     for(const b of BUILDINGS)await building(page,b,testInfo.project.name==='mobile');
