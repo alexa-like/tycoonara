@@ -9,7 +9,7 @@ concurrency:
 permissions:
   contents: read
 jobs:
-  foundation:
+  auth-e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -25,14 +25,6 @@ jobs:
           node-version: '24'
       - name: Install exact dependencies
         run: npm ci --ignore-scripts
-      - name: Lint
-        run: npm run lint
-      - name: Audit dependencies
-        run: npm audit
-      - name: Unit tests
-        run: npm test
-      - name: Typecheck
-        run: npm run typecheck
       - name: Start isolated local Supabase
         run: npx supabase@2.75.0 start -x studio,imgproxy,storage-api,realtime,edge-runtime,logflare,vector,supavisor
       - name: Apply migrations to local database
@@ -56,3 +48,52 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Mobile and desktop browser acceptance tests
         run: npm run test:e2e
+
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: local-ci-public-placeholder
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts
+      - run: npm run lint
+      - run: npm audit
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Public desktop/mobile accessibility and protected-route checks
+        run: npm run test:e2e -- --grep 'public landing'
+
+  ledger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/tycoonara_test
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts
+      - name: Start runner's isolated PostgreSQL service
+        run: |
+          sudo systemctl start postgresql
+          sudo -u postgres psql -c "alter user postgres password 'postgres';"
+          sudo -u postgres createdb tycoonara_test
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/local-auth.sql
+          for migration in supabase/migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration"; done
+      - name: Least privilege and balanced immutable ledger
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/security.sql
+      - name: Twelve concurrent bootstrap transactions
+        run: node tests/concurrency.mjs
