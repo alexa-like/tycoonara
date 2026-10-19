@@ -16,7 +16,7 @@ Use Node 24 and Docker. Use `npm ci` with the committed dependency lockfile. All
 
 ```sh
 npm ci
-npx supabase@2.75.0 start
+SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io npx supabase@2.75.0 start
 npx supabase@2.75.0 db reset --local --no-seed
 cp .env.example .env.local
 # Copy the local API URL and anon/publishable key from `supabase status` into .env.local.
@@ -34,11 +34,11 @@ In Supabase Dashboard → Authentication → URL Configuration:
 
 1. Set Site URL to the verified production origin once a production release is approved.
 2. Allow the exact preview origin under Redirect URLs, including `/auth/callback`, `/auth/confirm` and `/auth/update-password`. For repeatable previews, allow only the project's scoped Vercel hostname pattern, not all Vercel sites.
-3. For cross-device email confirmation, set the signup template link to `{{ .RedirectTo }}` only when using an explicit token-hash template, e.g. `https://YOUR_ORIGIN/auth/confirm?token_hash={{ .TokenHash }}&type=signup`. For recovery use `/auth/confirm?token_hash={{ .TokenHash }}&type=recovery`. Replace YOUR_ORIGIN with the intended deployment origin; use separate templates/settings for preview versus production when testing.
+3. For cross-device email confirmation, use an explicit token-hash template link, e.g. `https://YOUR_ORIGIN/auth/confirm?token_hash={{ .TokenHash }}&type=signup`. For recovery use `/auth/confirm?token_hash={{ .TokenHash }}&type=recovery`. Replace YOUR_ORIGIN with the intended deployment origin; use separate templates/settings for preview versus production when testing.
 4. The default `{{ .ConfirmationURL }}` templates also work through `/auth/callback` using PKCE **in the browser that initiated the request**. Both routes are supported, invalid/expired links return to sign-in, and `next` is an allowlist.
 5. Configure a production SMTP provider before a public launch. Supabase's built-in mail provider restricts recipients and send volume. Test with an authorized recipient; do not claim delivered email or public signup is verified until it actually is.
 
-In local development the email capture UI is http://127.0.0.1:54324. CI uses the real local Supabase Auth service with confirmed email enabled and captures links only from that isolated local inbox. No external email is sent during tests.
+CI uses the supported Docker Hub image registry to avoid anonymous ECR throttling. In local development the Mailpit email capture UI is http://127.0.0.1:54324. CI uses the real local Supabase Auth service with confirmed email enabled and captures links only from that isolated local inbox. No external email is sent during tests.
 
 ## Database and audit model
 
