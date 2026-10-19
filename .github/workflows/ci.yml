@@ -1,4 +1,4 @@
-name: Stage 1 checks
+name: Foundation and Stage 2A checks
 on:
   push:
     branches: [main]
@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
+      TYCOONARA_JOBS_ENABLED: 'true'
       SUPABASE_INTERNAL_IMAGE_REGISTRY: docker.io
       NEXT_PUBLIC_SITE_URL: http://localhost:3000
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
@@ -61,7 +62,9 @@ jobs:
         if: always()
         with:
           name: auth-real-flow-screenshots
-          path: test-results/**/auth-*.png
+          path: |
+            test-results/**/auth-*.png
+            test-results/**/jobs-*.png
           retention-days: 30
 
   quality:
@@ -107,11 +110,20 @@ jobs:
           sudo -u postgres psql -c "alter user postgres password 'postgres';"
           sudo -u postgres createdb tycoonara_test
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/local-auth.sql
-          for migration in supabase/migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration"; done
+          for migration in supabase/migrations/202610190*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration"; done
       - name: Least privilege and balanced immutable ledger
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/security.sql
       - name: Twelve concurrent bootstrap transactions
         run: node tests/concurrency.mjs
+      - name: Upgrade the populated Stage 1 database
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'create table private.stage1_snapshot as select p.id,p.username,p.avatar,p.xp,p.level,p.reputation,w.balance_subunits from public.players p join public.wallets w on w.player_id=p.id;'
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20261019151500_stage_2a_jobs.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "do \$\$ begin if exists(select * from private.stage1_snapshot except select p.id,p.username,p.avatar,p.xp,p.level,p.reputation,w.balance_subunits from public.players p join public.wallets w on w.player_id=p.id) then raise exception 'Stage 1 data changed'; end if; end \$\$;"
+      - name: Stage 1 security after upgrade
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/security.sql
+      - name: Job races, replays, tampering, cooldowns and progression
+        run: node tests/jobs.mjs
 
   screenshots:
     runs-on: ubuntu-latest

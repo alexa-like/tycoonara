@@ -6,6 +6,7 @@ import { BUILDINGS, buildingState, ec } from '@/lib/rules.mjs';
 import { signOut } from '@/app/actions';
 import { Avatar } from './portrait';
 import { ThemeToggle } from './theme';
+import { JobCenter } from './job-center';
 export type Player = { id:string; username:string; avatar:string; level:number; xp:number; reputation:number };
 type Section = 'district'|'buildings'|'founder'|'notices'|'settings';
 type Panel = Exclude<Section,'district'>|'building';
@@ -23,8 +24,8 @@ const ICON_PATHS:Record<IconName,string> = {
 const NAV:readonly Section[] = ['district','buildings','founder','notices','settings'];
 function title(section:Section) {return section[0].toUpperCase()+section.slice(1);}
 function Icon({name}:{name:IconName}) {return <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={ICON_PATHS[name]}/></svg>;}
-function statusLabel(state:string,level:number) {return state==='Locked'?`Level ${level} · Locked`:state==='Preview'?'Future preview':'Open · Your HQ';}
-export function District({player,balance}:{player:Player;balance:number}) {
+function statusLabel(state:string,level:number) {return state==='Locked'?`Level ${level} · Locked`:state==='Preview'?'Future preview':'Open · Explore';}
+export function District({player,balance,jobsEnabled=false}:{player:Player;balance:number;jobsEnabled?:boolean}) {
   const dialog=useRef<HTMLDialogElement>(null);
   const panelHeading=useRef<HTMLHeadingElement>(null);
   const map=useRef<HTMLDivElement>(null);
@@ -107,15 +108,15 @@ export function District({player,balance}:{player:Player;balance:number}) {
       <div className="panel-header"><div><span className="eyebrow">{panel==='building'?statusLabel(state,building.level):'YOUR TYCOONARA'}</span><h2 id="building-title" ref={panelHeading} tabIndex={-1}>{panelTitle}</h2></div><button className="dialog-close" aria-label="Close panel" onClick={close} autoFocus><Icon name="close"/></button></div>
       <div className="panel-body">
         {panel==='buildings'&&<><p className="panel-intro">All 11 places. Choose any address to see its details.</p><div className="directory-grid">{BUILDINGS.map((b,index)=>{const status=buildingState(b,player.level);return <button key={b.id} className={`building-card ${status.toLowerCase()}`} data-selected={selected===b.id} onClick={()=>openBuilding(b.id)}><span className="building-emblem" aria-hidden="true"><Icon name={status==='Locked'?'lock':'buildings'}/><small>{String(index+1).padStart(2,'0')}</small></span><span><strong>{b.name}</strong><small>{statusLabel(status,b.level)}</small></span><span className="building-arrow" aria-hidden="true">↗</span></button>;})}</div></>}
-        {panel==='building'&&<><div className="panel-crest" aria-hidden="true"><Icon name={state==='Locked'?'lock':'buildings'}/></div><p id="building-description">{building.description}</p>{building.id==='hq'?<Founder player={player} balance={balance}/>:<p className="feedback">{player.level<building.level?`Requires level ${building.level}. Progression is not available in Stage 1.`:'Stage 2 coming soon. This is a preview; no jobs, trades or EC changes are available yet.'}</p>}<button className="locate-button" onClick={locate}><Icon name="locate"/>Locate on map</button><button className="panel-link" onClick={()=>open('buildings','buildings')}>Browse all buildings</button></>}
+        {panel==='building'&&<><div className="panel-crest" aria-hidden="true"><Icon name={state==='Locked'?'lock':'buildings'}/></div><p id="building-description">{building.description}</p>{building.id==='hq'?<Founder player={player} balance={balance}/>:building.id==='jobs'?(jobsEnabled?<JobCenter level={player.level}/>:<p className="feedback">Small favors. Real progress. Job Center is awaiting its isolated development database. No earnings actions are enabled here.</p>):<p className="feedback">{player.level<building.level?`Requires level ${building.level}. Earn XP through NPC jobs to reach this level.`:'Future district preview. This business is not playable in Stage 2A.'}</p>}<button className="locate-button" onClick={locate}><Icon name="locate"/>Locate on map</button><button className="panel-link" onClick={()=>open('buildings','buildings')}>Browse all buildings</button></>}
         {panel==='founder'&&<Founder player={player} balance={balance}/>}
-        {panel==='notices'&&<div className="notice-empty"><Icon name="notices"/><h3>A quiet first day.</h3><p>No notifications yet. Future district updates will appear here.</p><p className="feedback">Good things start small. Your founder profile and one-time 500 EC grant are saved. Jobs, trading and progression arrive in later stages.</p></div>}
-        {panel==='settings'&&<><div className="settings-section"><h3>Appearance</h3><p>Choose the theme that feels at home. Your preference is saved on this device.</p><ThemeToggle/></div><div className="settings-section"><h3>Your account</h3><p>Signed in as <strong>{player.username}</strong>. Your founder profile and district are saved.</p><form action={signOut}><button className="signout-button">Sign out</button></form></div><div className="settings-section"><h3>About your district</h3><p>Tycoonara · Stage 1. Explore all eleven buildings. Economy actions and progression are not available yet.</p></div></>}
+        {panel==='notices'&&<div className="notice-empty"><Icon name="notices"/><h3>A quiet first day.</h3><p>No notifications yet. Future district updates will appear here.</p><p className="feedback">Good things start small. Your founder profile and one-time 500 EC grant are saved. Visit the Job Center to earn EC and XP. Trading remains a future feature.</p></div>}
+        {panel==='settings'&&<><div className="settings-section"><h3>Appearance</h3><p>Choose the theme that feels at home. Your preference is saved on this device.</p><ThemeToggle/></div><div className="settings-section"><h3>Your account</h3><p>Signed in as <strong>{player.username}</strong>. Your founder profile and district are saved.</p><form action={signOut}><button className="signout-button">Sign out</button></form></div><div className="settings-section"><h3>About your district</h3><p>Tycoonara · Stage 2A development. NPC jobs are the first earnings loop. Other businesses remain previews.</p></div></>}
         <button className="primary panel-done" onClick={close}>Back to the district</button>
       </div>
     </dialog>
   </>;
 }
 function Founder({player,balance}:{player:Player;balance:number}) {
-  return <div className="hq-profile"><Avatar preset={player.avatar}/><h3>{player.username}</h3><p>Founder · Level {player.level}</p><dl><div><dt>Capital</dt><dd>{ec(balance)} EC</dd></div><div><dt>Experience</dt><dd>{player.xp} XP</dd></div><div><dt>Reputation</dt><dd>{player.reputation}</dd></div></dl><p className="feedback">Your founding grant is recorded. Progression will arrive in a later stage.</p></div>;
+  return <div className="hq-profile"><Avatar preset={player.avatar}/><h3>{player.username}</h3><p>Founder · Level {player.level}</p><dl><div><dt>Capital</dt><dd>{ec(balance)} EC</dd></div><div><dt>Experience</dt><dd>{player.xp} XP</dd></div><div><dt>Reputation</dt><dd>{player.reputation}</dd></div></dl><p className="feedback">Your founding grant is recorded. Earn XP at the Job Center. Every 100 XP adds a level, up to level 25. Other businesses remain future previews.</p></div>;
 }
