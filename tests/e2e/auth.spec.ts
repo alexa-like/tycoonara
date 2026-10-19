@@ -37,7 +37,7 @@ for(const width of [320,360,390,430,768,1024,1440])for(const theme of ['light','
     await page.setViewportSize({width,height:844});
     // Isolated visual app only: production /auth/update-password remains session-protected.
     await page.goto('http://localhost:3002/auth-review?screen=update');await layout(page,width);
-    const newPassword=page.getByLabel('New password');await newPassword.fill('short');await page.getByRole('button',{name:'Save password and sign out',exact:true}).click();expect(await newPassword.evaluate((el:HTMLInputElement)=>el.validity.tooShort)).toBe(true);
+    const newPassword=page.getByLabel('New password',{exact:true});await newPassword.fill('short');await page.getByRole('button',{name:'Save password and sign out',exact:true}).click();expect(await newPassword.evaluate((el:HTMLInputElement)=>el.validity.tooShort)).toBe(true);
     await page.getByRole('button',{name:'Show new password',exact:true}).click();await expect(newPassword).toHaveAttribute('type','text');await page.getByRole('button',{name:'Hide new password',exact:true}).click();await expect(newPassword).toHaveAttribute('type','password');
   });
 }

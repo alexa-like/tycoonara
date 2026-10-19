@@ -69,7 +69,12 @@ for(const theme of ['light','dark']) test(`signup, email verification, profile, 
   await accessible(page);
   await page.screenshot({path:testInfo.outputPath(`auth-signup-sent-${theme}.png`),fullPage:true});
   await page.getByRole('button',{name:'Resend verification',exact:true}).click();
+  // Respect the explicit 1-second local Supabase auth.email.max_frequency window.
+  await page.waitForTimeout(1100);
   await page.getByRole('button',{name:'Send verification link',exact:true}).click();
+  await expect(page.locator('.auth-form')).toHaveAttribute('aria-busy','false');
+  await expect(page.locator('.auth-feedback')).not.toBeEmpty();
+  await page.screenshot({path:testInfo.outputPath(`auth-verification-result-${theme}.png`),fullPage:true});
   await expect(page.getByRole('status')).toContainText('new link');
   await page.screenshot({path:testInfo.outputPath(`auth-verification-sent-${theme}.png`),fullPage:true});
   await accessible(page);
@@ -114,9 +119,9 @@ for(const theme of ['light','dark']) test(`signup, email verification, profile, 
   await expect(page).toHaveURL(/\/auth\/update-password/);
   await accessible(page);
   await page.screenshot({path:testInfo.outputPath(`auth-update-${theme}.png`),fullPage:true});
-  await page.getByLabel('New password').fill(`${password}new`);
+  await page.getByLabel('New password',{exact:true}).fill(`${password}new`);
   await page.getByRole('button',{name:'Show new password',exact:true}).click();
-  await expect(page.getByLabel('New password')).toHaveAttribute('type','text');
+  await expect(page.getByLabel('New password',{exact:true})).toHaveAttribute('type','text');
   await page.getByRole('button',{name:'Hide new password',exact:true}).click();
   await page.getByRole('button',{name:'Save password and sign out'}).click();
   await expect(page).toHaveURL(/\/login\?notice=password/);
