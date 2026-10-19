@@ -49,6 +49,12 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Mobile and desktop browser acceptance tests
         run: npm run test:e2e
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: auth-real-flow-screenshots
+          path: test-results/**/auth-*.png
+          retention-days: 30
 
   quality:
     runs-on: ubuntu-latest
@@ -72,7 +78,7 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - name: Public desktop/mobile accessibility and protected-route checks
-        run: npm run test:e2e -- --grep 'public landing|isolated district presentation'
+        run: npm run test:e2e -- --grep 'public landing|isolated district presentation|mobile-first authentication'
 
   ledger:
     runs-on: ubuntu-latest
@@ -130,4 +136,19 @@ jobs:
         with:
           name: district-before-after-screenshots
           path: test-results/district-screenshots/*.png
+          retention-days: 30
+
+      - name: Check out authentication before source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 3ff09ae9df804e5219ffd2cb00f973c7bb68736e
+          path: auth-before-source
+          persist-credentials: false
+      - run: ln -s "$GITHUB_WORKSPACE/node_modules" auth-before-source/node_modules
+      - name: Capture all authentication screens in both themes
+        run: node scripts/capture-auth.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: auth-before-after-screenshots
+          path: test-results/auth-screenshots/*.png
           retention-days: 30
