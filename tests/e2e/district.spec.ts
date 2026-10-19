@@ -2,21 +2,23 @@ import {test,expect,type Page} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {BUILDINGS,buildingState} from '../../lib/rules.mjs';
 async function checkAlignment(page:Page,contained:boolean) {
-  const image=await page.locator('.map-world > img').boundingBox();expect(image).not.toBeNull();
-  const map=await page.locator('.map-scroll').boundingBox();expect(map).not.toBeNull();
-  const boxes=[];
-  for(const b of BUILDINGS) {
-    const box=await page.locator('.hotspot').filter({has:page.locator(`.site-caption strong`,{hasText:b.id==='hq'?'Your Headquarters':b.name})}).boundingBox();
-    expect(box).not.toBeNull();if(!box||!image||!map)continue;
-    expect(box.width).toBeGreaterThanOrEqual(44);expect(box.height).toBeGreaterThanOrEqual(44);
-    expect(Math.abs((box.x+box.width/2-image.x)/image.width*100-b.x)).toBeLessThan(.2);
-    expect(Math.abs((box.y+box.height/2-image.y)/image.height*100-b.y)).toBeLessThan(.2);
-    if(contained) {expect(box.x).toBeGreaterThanOrEqual(map.x-1);expect(box.x+box.width).toBeLessThanOrEqual(map.x+map.width+1);expect(box.y).toBeGreaterThanOrEqual(map.y-1);expect(box.y+box.height).toBeLessThanOrEqual(map.y+map.height+1);}
-    boxes.push(box);
+  // Read everything in one animation frame, including while native touch momentum is active.
+  const geometry=await page.evaluate(()=>{
+    const rect=(element:Element)=>{const r=element.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};};
+    return {image:rect(document.querySelector('.map-world > img')!),map:rect(document.querySelector('.map-scroll')!),boxes:[...document.querySelectorAll('.hotspot')].map(rect)};
+  });
+  const {image,map,boxes}=geometry;
+  expect(boxes).toHaveLength(11);
+  for(const [index,b] of BUILDINGS.entries()) {
+    const box=boxes[index];
+    expect(box.width,b.name).toBeGreaterThanOrEqual(44);expect(box.height,b.name).toBeGreaterThanOrEqual(44);
+    expect(Math.abs((box.x+box.width/2-image.x)/image.width*100-b.x),b.name+' horizontal alignment').toBeLessThan(.2);
+    expect(Math.abs((box.y+box.height/2-image.y)/image.height*100-b.y),b.name+' vertical alignment').toBeLessThan(.2);
+    if(contained){expect(box.x).toBeGreaterThanOrEqual(map.x-1);expect(box.x+box.width).toBeLessThanOrEqual(map.x+map.width+1);expect(box.y).toBeGreaterThanOrEqual(map.y-1);expect(box.y+box.height).toBeLessThanOrEqual(map.y+map.height+1);}
   }
-  for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++) {
+  for(let i=0;i<boxes.length;i++)for(let j=i+1;j<boxes.length;j++){
     const a=boxes[i],b=boxes[j];const overlapX=Math.min(a.x+a.width,b.x+b.width)-Math.max(a.x,b.x);const overlapY=Math.min(a.y+a.height,b.y+b.height)-Math.max(a.y,b.y);
-    expect(overlapX>1&&overlapY>1,'Building targets must not overlap').toBe(false);
+    expect(overlapX>1&&overlapY>1,`${BUILDINGS[i].name} and ${BUILDINGS[j].name} touch targets must not overlap`).toBe(false);
   }
 }
 async function panel(page:Page,name:string,touch:boolean,keyboard=false) {
