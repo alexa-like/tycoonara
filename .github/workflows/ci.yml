@@ -29,10 +29,10 @@ jobs:
       - name: Configure isolated test emails for the existing SSR confirmation route
         run: |
           # CI checkout only; hosted Supabase settings and the committed config stay unchanged.
-          cat >> supabase/config.toml <<'TOML'
+          cat >> supabase/config.toml <<TOML
           [auth.email.template.confirmation]
           subject = "Verify your Tycoonara account"
-          content_path = "../tests/email/confirmation.html"
+          content_path = "$GITHUB_WORKSPACE/tests/email/confirmation.html"
           TOML
       - name: Start isolated local Supabase
         run: npx supabase@2.75.0 start -x studio,imgproxy,storage-api,realtime,edge-runtime,logflare,vector,supavisor
