@@ -1,0 +1,161 @@
+name: Stage 1 checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths-ignore: ['docs/screenshots/**']
+concurrency:
+  group: stage1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  auth-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_INTERNAL_IMAGE_REGISTRY: docker.io
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install exact dependencies
+        run: npm ci --ignore-scripts
+      - name: Configure isolated test emails for the existing SSR confirmation route
+        run: |
+          # CI checkout only; hosted Supabase settings and the committed config stay unchanged.
+          cat >> supabase/config.toml <<TOML
+          [auth.email.template.confirmation]
+          subject = "Verify your Tycoonara account"
+          content_path = "$GITHUB_WORKSPACE/tests/email/confirmation.html"
+          TOML
+      - name: Start isolated local Supabase
+        run: npx supabase@2.75.0 start -x studio,imgproxy,storage-api,realtime,edge-runtime,logflare,vector,supavisor
+      - name: Apply migrations to local database
+        run: npx supabase@2.75.0 db reset --local --no-seed
+      - name: Configure local-only public auth variables
+        run: |
+          npx supabase@2.75.0 status -o env > /tmp/tycoonara-local-env
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const values = Object.fromEntries(fs.readFileSync('/tmp/tycoonara-local-env','utf8').split('\n').filter(l=>l.includes('=')).map(l=>{const i=l.indexOf('=');return [l.slice(0,i),l.slice(i+1).replace(/^"|"$/g,'')];}));
+          fs.appendFileSync(process.env.GITHUB_ENV, `NEXT_PUBLIC_SUPABASE_URL=${values.API_URL}\nNEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${values.ANON_KEY}\n`);
+          fs.unlinkSync('/tmp/tycoonara-local-env');
+          JS
+      - name: Database RLS and ledger tests
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/security.sql
+      - name: Concurrent grant test
+        run: node tests/concurrency.mjs
+      - name: Production build
+        run: npm run build
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Mobile and desktop browser acceptance tests
+        run: npm run test:e2e
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: auth-real-flow-screenshots
+          path: test-results/**/auth-*.png
+          retention-days: 30
+
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: local-ci-public-placeholder
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts
+      - run: npm run lint
+      - run: npm audit
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Public desktop/mobile accessibility and protected-route checks
+        run: npm run test:e2e -- --grep 'public landing|isolated district presentation|mobile-first authentication'
+
+  ledger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/tycoonara_test
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts
+      - name: Start runner's isolated PostgreSQL service
+        run: |
+          sudo systemctl start postgresql
+          sudo -u postgres psql -c "alter user postgres password 'postgres';"
+          sudo -u postgres createdb tycoonara_test
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/local-auth.sql
+          for migration in supabase/migrations/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$migration"; done
+      - name: Least privilege and balanced immutable ledger
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/security.sql
+      - name: Twelve concurrent bootstrap transactions
+        run: node tests/concurrency.mjs
+
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: local-ci-public-placeholder
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: Check out the reviewed Stage 1 before image source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: d119ef866c2d7f1a3fc573d6e76506fbb6dc8a61
+          path: before-source
+          persist-credentials: false
+      - name: Reuse the exact same locked renderer for the before source
+        run: ln -s "$GITHUB_WORKSPACE/node_modules" before-source/node_modules
+      - name: Capture before/after mobile and desktop, light/dark
+        run: node scripts/capture-district.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: district-before-after-screenshots
+          path: test-results/district-screenshots/*.png
+          retention-days: 30
+
+      - name: Check out authentication before source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 3ff09ae9df804e5219ffd2cb00f973c7bb68736e
+          path: auth-before-source
+          persist-credentials: false
+      - run: ln -s "$GITHUB_WORKSPACE/node_modules" auth-before-source/node_modules
+      - name: Capture all authentication screens in both themes
+        run: node scripts/capture-auth.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: auth-before-after-screenshots
+          path: test-results/auth-screenshots/*.png
+          retention-days: 30
