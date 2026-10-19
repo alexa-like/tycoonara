@@ -34,5 +34,10 @@ for(const width of [320,360,390,430,768,1024,1440])for(const theme of ['light','
     await page.goto('/login?notice=password');await expect(page.getByRole('status')).toContainText('Password updated');await layout(page,width);
     // Short visual viewport approximates the space remaining above an on-screen keyboard.
     if(width===390){await page.setViewportSize({width,height:420});await page.getByLabel('Password',{exact:true}).focus();await page.getByRole('button',{name:'Enter Tycoonara',exact:true}).scrollIntoViewIfNeeded();await expect(page.getByRole('button',{name:'Enter Tycoonara',exact:true})).toBeInViewport();}
+    await page.setViewportSize({width,height:844});
+    // Isolated visual app only: production /auth/update-password remains session-protected.
+    await page.goto('http://localhost:3002/auth-review?screen=update');await layout(page,width);
+    const newPassword=page.getByLabel('New password');await newPassword.fill('short');await page.getByRole('button',{name:'Save password and sign out',exact:true}).click();expect(await newPassword.evaluate((el:HTMLInputElement)=>el.validity.tooShort)).toBe(true);
+    await page.getByRole('button',{name:'Show new password',exact:true}).click();await expect(newPassword).toHaveAttribute('type','text');await page.getByRole('button',{name:'Hide new password',exact:true}).click();await expect(newPassword).toHaveAttribute('type','password');
   });
 }
