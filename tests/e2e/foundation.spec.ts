@@ -5,14 +5,16 @@ async function accessible(page: Page) {
   expect(results.violations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 }
-async function emailLink(request: APIRequestContext, mailbox: string) {
+async function emailLink(request: APIRequestContext, mailbox: string, purpose = 'signup') {
   let link = '';
   await expect.poll(async () => {
     const response = await request.get(`http://127.0.0.1:54324/api/v1/mailbox/${mailbox}`);
     if (!response.ok()) return false;
     const messages = await response.json();
     if (!messages.length) return false;
-    const message = await (await request.get(`http://127.0.0.1:54324/api/v1/mailbox/${mailbox}/${messages[0].id}`)).json();
+    const chosen = messages.find((m: { subject?: string }) => purpose === 'recovery' ? /reset|recover/i.test(m.subject || '') : /confirm|verify/i.test(m.subject || ''));
+    if (!chosen) return false;
+    const message = await (await request.get(`http://127.0.0.1:54324/api/v1/mailbox/${mailbox}/${chosen.id}`)).json();
     const html = message.body.html || message.body.text;
     const match = html.match(/https?:\/\/[^\s"<>]*\/auth\/v1\/verify[^\s"<>]*/);
     link = match ? match[0].replaceAll('&amp;','&') : '';
@@ -78,7 +80,7 @@ test('signup, email verification, profile, map, persistence, reset and signout',
   await page.getByLabel('Email address').fill(email);
   await page.getByRole('button',{name:'Send reset link',exact:true}).click();
   await expect(page.getByRole('status')).toContainText('password reset link');
-  await page.goto(await emailLink(request,mailbox));
+  await page.goto(await emailLink(request,mailbox,'recovery'));
   await expect(page).toHaveURL(/\/auth\/update-password/);
   await page.getByLabel('New password').fill(`${password}new`);
   await page.getByRole('button',{name:'Save password and sign out'}).click();

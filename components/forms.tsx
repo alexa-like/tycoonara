@@ -7,10 +7,10 @@ function Feedback({ state }: { state: { error?: string; message?: string } }) {
   return <div aria-live="polite">{state.error && <p role="alert" className="feedback error">{state.error}</p>}{state.message && <p role="status" className="feedback">{state.message}</p>}</div>;
 }
 export function AuthForm() {
-  const [mode, setMode] = useState('signin');
+  const [mode, setMode] = useState<'signin' | 'signup' | 'reset' | 'resend'>('signin');
   const [state, action, pending] = useActionState(authenticate, {});
   return <>
-    <div className="tabs" aria-label="Account action">{[['signin','Sign in'],['signup','Create account'],['reset','Reset password'],['resend','Resend verification']].map(([value,label]) => <button key={value} type="button" aria-pressed={mode === value} onClick={() => setMode(value)}>{label}</button>)}</div>
+    <div className="tabs" aria-label="Account action">{([['signin','Sign in'],['signup','Create account'],['reset','Reset password'],['resend','Resend verification']] as const).map(([value,label]) => <button key={value} type="button" aria-pressed={mode === value} onClick={() => setMode(value)}>{label}</button>)}</div>
     <form action={action} className="stack">
       <input type="hidden" name="mode" value={mode} />
       <label htmlFor="email">Email address</label><input id="email" name="email" type="email" autoComplete="email" required maxLength={254} />
