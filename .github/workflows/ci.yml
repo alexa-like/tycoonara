@@ -1,8 +1,11 @@
 name: Stage 1 checks
 on:
   push:
-    branches: [main, feat/stage-1-foundation]
+    branches: [main]
   pull_request:
+concurrency:
+  group: stage1-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -25,6 +28,8 @@ jobs:
         run: npm audit --omit=dev
       - name: Unit tests
         run: npm test
+      - name: Typecheck
+        run: npm run typecheck
       - name: Start isolated local Supabase
         run: npx supabase@2.75.0 start -x studio,imgproxy,storage-api,realtime,edge-runtime,logflare,vector,supavisor
       - name: Apply migrations to local database
@@ -44,8 +49,6 @@ jobs:
         run: node tests/concurrency.mjs
       - name: Production build
         run: npm run build
-      - name: Typecheck
-        run: npm run typecheck
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Mobile and desktop browser acceptance tests
