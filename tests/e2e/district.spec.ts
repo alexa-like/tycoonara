@@ -1,0 +1,24 @@
+import {test,expect} from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+test('isolated district presentation: HUD, accessible map, locks and keyboard dialogs',async ({page}) => {
+  await page.goto('http://localhost:3002');
+  await expect(page.getByRole('heading',{name:/Business District/})).toBeVisible();
+  await expect(page.getByLabel('Founder statistics')).toContainText('FixtureFounder');
+  await expect(page.getByLabel('Founder statistics')).toContainText('500.00');
+  await expect(page.locator('.hotspot')).toHaveCount(11);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
+  await page.getByRole('button',{name:'Headquarters. Available. Level 1',exact:true}).click();
+  await expect(page.getByRole('dialog')).toContainText('Your founding grant is recorded');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  await expect(page.getByRole('button',{name:'Headquarters. Available. Level 1',exact:true})).toBeFocused();
+  await page.getByRole('button',{name:'Job Center. Preview. Level 1',exact:true}).click();
+  await expect(page.getByRole('dialog')).toContainText('Stage 2 coming soon');
+  await page.keyboard.press('Escape');
+  await page.getByText('Building directory · all 11 places',{exact:true}).click();
+  await page.locator('.directory-grid').getByRole('button',{name:/Research Center/}).click();
+  await expect(page.getByRole('dialog')).toContainText('Requires level 20');
+  expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
+  await page.getByRole('button',{name:'Back to the district',exact:true}).click();
+});

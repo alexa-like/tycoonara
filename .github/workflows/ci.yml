@@ -71,7 +71,7 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - name: Public desktop/mobile accessibility and protected-route checks
-        run: npm run test:e2e -- --grep 'public landing'
+        run: npm run test:e2e -- --grep 'public landing|isolated district presentation'
 
   ledger:
     runs-on: ubuntu-latest
