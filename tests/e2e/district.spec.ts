@@ -6,6 +6,7 @@ test('isolated district presentation: HUD, accessible map, locks and keyboard di
   await expect(page.getByLabel('Founder statistics')).toContainText('FixtureFounder');
   await expect(page.getByLabel('Founder statistics')).toContainText('500.00');
   await expect(page.locator('.hotspot')).toHaveCount(11);
+  await expect.poll(() => page.locator('.map-world > img').evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze()).violations).toEqual([]);
   await page.getByRole('button',{name:'Headquarters. Available. Level 1',exact:true}).click();
