@@ -8,14 +8,15 @@ async function accessible(page: Page) {
 async function emailLink(request: APIRequestContext, mailbox: string, purpose = 'signup') {
   let link = '';
   await expect.poll(async () => {
-    const response = await request.get(`http://127.0.0.1:54324/api/v1/mailbox/${mailbox}`);
+    const response = await request.get('http://127.0.0.1:54324/api/v1/messages');
     if (!response.ok()) return false;
-    const messages = await response.json();
-    if (!messages.length) return false;
-    const chosen = messages.find((m: { subject?: string }) => purpose === 'recovery' ? /reset|recover/i.test(m.subject || '') : /confirm|verify/i.test(m.subject || ''));
-    if (!chosen) return false;
-    const message = await (await request.get(`http://127.0.0.1:54324/api/v1/mailbox/${mailbox}/${chosen.id}`)).json();
-    const html = message.body.html || message.body.text;
+    const inbox = await response.json();
+    const message = inbox.messages?.find((m: { To: { Address: string }[]; Subject: string }) =>
+      m.To.some(to => to.Address === `${mailbox}@example.test`) &&
+      (purpose === 'recovery' ? /reset|recover/i.test(m.Subject) : /confirm|verify/i.test(m.Subject)));
+    if (!message) return false;
+    const detail = await (await request.get(`http://127.0.0.1:54324/api/v1/message/${message.ID}`)).json();
+    const html = detail.HTML || detail.Text;
     const match = html.match(/https?:\/\/[^\s"<>]*\/auth\/v1\/verify[^\s"<>]*/);
     link = match ? match[0].replaceAll('&amp;','&') : '';
     return Boolean(link);
