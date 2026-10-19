@@ -57,11 +57,11 @@ for(const theme of ['light','dark']) test(`signup, email verification, profile, 
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password',{exact:true}).fill('Incorrect-password-2026!');
   await submitWithPendingCheck(page,'Enter Tycoonara');
-  await expect(page.getByRole('alert')).toContainText('Could not sign in');
+  await expect(page.locator('.auth-feedback').getByRole('alert')).toContainText('Could not sign in');
   await expect(page.locator('.auth-feedback')).toBeFocused();
   await page.screenshot({path:testInfo.outputPath(`auth-error-${theme}.png`),fullPage:true});
   await page.getByRole('button',{name:'Create account',exact:true}).click();
-  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.locator('.auth-feedback').getByRole('alert')).toHaveCount(0);
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password',{exact:true}).fill(password);
   await submitWithPendingCheck(page,'Start your story');

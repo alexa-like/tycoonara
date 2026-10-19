@@ -13,7 +13,10 @@ async function capture(version,source){
     writeFileSync(join(source,'tests/presentation/app/layout.tsx'),"import RootLayout from '@/app/layout';export default RootLayout;\n");
   }
   writeFileSync(join(source,'tests/presentation/next.config.ts'),'export default {devIndicators:false};\n');
-  const server=spawn(process.execPath,[join(root,'node_modules/next/dist/bin/next'),'dev',join(source,'tests/presentation'),'--webpack','-p','3002'],{cwd:source,detached:true,stdio:['ignore','pipe','pipe'],env:{...process.env,NEXT_TELEMETRY_DISABLED:'1'}});
+  // Use the production renderer: development issue widgets are not part of the game UI.
+  const next=join(root,'node_modules/next/dist/bin/next');
+  await new Promise((done,reject)=>{const build=spawn(process.execPath,[next,'build',join(source,'tests/presentation'),'--webpack'],{cwd:source,stdio:['ignore','pipe','pipe'],env:{...process.env,NEXT_TELEMETRY_DISABLED:'1'}});let output='';build.stdout.on('data',data=>output+=data.toString());build.stderr.on('data',data=>output+=data.toString());build.once('error',reject);build.once('exit',code=>code===0?done():reject(new Error(output.slice(-6000))));});
+  const server=spawn(process.execPath,[next,'start',join(source,'tests/presentation'),'-p','3002'],{cwd:source,detached:true,stdio:['ignore','pipe','pipe'],env:{...process.env,NEXT_TELEMETRY_DISABLED:'1'}});
   let logs='';server.stdout.on('data',data=>logs+=data.toString());server.stderr.on('data',data=>logs+=data.toString());
   try{
     let ready=false;for(let attempt=0;attempt<90;attempt++){try{if((await fetch('http://localhost:3002/auth-review')).ok){ready=true;break;}}catch{}await new Promise(done=>setTimeout(done,1000));}if(!ready)throw new Error(logs.slice(-4000));
