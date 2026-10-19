@@ -25,7 +25,7 @@ async function capture(version,source){
       if(version==='after')await page.waitForFunction(()=>document.querySelector('.map-scroll')?.getAttribute('data-ready')==='true');
       const name=`${version}-${width<1000?'mobile':'desktop'}-${width}x${height}-${theme}`;
       await page.screenshot({path:join(output,`${name}.png`)});
-      if(version==='before'){await page.screenshot({path:join(output,`${name}-full.png`),fullPage:true});continue;}
+      if(version==='before'){await page.screenshot({path:join(output,`${name}-full.png`),fullPage:true});await context.close();continue;}
       if(width===390||width===1440||height<500){
         await page.getByRole('button',{name:'Explore streets',exact:true}).click();await page.getByRole('button',{name:'Zoom in',exact:true}).click();await page.screenshot({path:join(output,`${name}-explore.png`)});await page.getByRole('button',{name:'Whole district',exact:true}).click();
         await page.getByRole('button',{name:'Marketplace. Preview. Level 1',exact:true}).click();await page.screenshot({path:join(output,`${name}-building.png`)});await page.getByRole('button',{name:'Close panel',exact:true}).click();

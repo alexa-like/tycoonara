@@ -29,7 +29,6 @@ export function District({player,balance}:{player:Player;balance:number}) {
   const panelHeading=useRef<HTMLHeadingElement>(null);
   const map=useRef<HTMLDivElement>(null);
   const markerRefs=useRef<Record<string,HTMLButtonElement|null>>({});
-  const opener=useRef<HTMLElement|null>(null);
   const focusAfterClose=useRef<HTMLElement|null>(null);
   const [panel,setPanel]=useState<Panel|null>(null);
   const [active,setActive]=useState<Section>('district');
@@ -46,16 +45,18 @@ export function District({player,balance}:{player:Player;balance:number}) {
     measure();const observer=new ResizeObserver(measure);observer.observe(element);return ()=>observer.disconnect();
   },[]);
   function open(next:Panel,section:Section=active) {
-    if(!dialog.current?.open)opener.current=document.activeElement as HTMLElement;
     setPanel(next);setActive(section);
     if(!dialog.current?.open)dialog.current?.showModal();
     else requestAnimationFrame(()=>panelHeading.current?.focus());
   }
   function close() {dialog.current?.close();}
   function closed() {
+    // A queued close event must not clear a panel opened immediately afterwards.
+    if(dialog.current?.open){focusAfterClose.current=null;return;}
     setPanel(null);setActive('district');
-    const target=focusAfterClose.current??opener.current;focusAfterClose.current=null;
-    requestAnimationFrame(()=>target?.focus({preventScroll:true}));
+    // Native dialog dismissal restores its opener synchronously. Only Locate overrides it.
+    const target=focusAfterClose.current;focusAfterClose.current=null;
+    target?.focus({preventScroll:true});
   }
   function navigate(section:Section) {
     if(section==='district'){close();setActive('district');map.current?.focus({preventScroll:true});return;}

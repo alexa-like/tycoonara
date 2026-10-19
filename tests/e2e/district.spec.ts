@@ -34,6 +34,7 @@ for(const [width,height] of [[320,844],[360,844],[390,844],[430,844],[844,390],[
     await expect(nav(page).getByRole('button')).toHaveCount(5);await expect(nav(page).getByRole('button')).toHaveText(['District','Buildings','Founder','Notices','Settings']);
     await expect(page.locator('.map-scroll')).toHaveAttribute('data-ready','true');
     await shell(page,width,height);await alignment(page);await accessible(page);
+    if(testInfo.project.name==='mobile')await nav(page).getByRole('button',{name:'District',exact:true}).tap();
     await nav(page).getByRole('button',{name:'District',exact:true}).click();await nav(page).getByRole('button',{name:'District',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);
     for(const b of BUILDINGS)await building(page,b,testInfo.project.name==='mobile');
     for(const b of BUILDINGS)await building(page,b,false,true);
@@ -46,7 +47,7 @@ for(const [width,height] of [[320,844],[360,844],[390,844],[430,844],[844,390],[
     for(const b of BUILDINGS)await building(page,b,testInfo.project.name==='mobile');
     await page.getByRole('button',{name:'Zoom in',exact:true}).click();await expect(page.locator('.map-zoom output')).toHaveText('150%');await alignment(page);
     const position=await page.locator('.map-scroll').evaluate(el=>({x:el.scrollLeft,y:el.scrollTop}));
-    await nav(page).getByRole('button',{name:'Buildings',exact:true}).click();const dialog=page.getByRole('dialog');await expect(dialog).toBeVisible();await expect(nav(page).locator('[aria-label=Buildings]')).toHaveAttribute('aria-current','page');await accessible(page);
+    if(testInfo.project.name==='mobile')await nav(page).getByRole('button',{name:'Buildings',exact:true}).tap();else await nav(page).getByRole('button',{name:'Buildings',exact:true}).click();const dialog=page.getByRole('dialog');await expect(dialog).toBeVisible();await expect(nav(page).locator('[aria-label=Buildings]')).toHaveAttribute('aria-current','page');await accessible(page);
     // Native modal inertness: coordinate taps on the dock cannot open duplicate dialogs or pan the map.
     const dock=await nav(page).boundingBox();const point={x:dock!.x+dock!.width*.3,y:dock!.y+dock!.height/2};expect(await page.evaluate(({x,y})=>!document.elementFromPoint(x,y)?.closest('.district-nav'),point)).toBe(true);
     const panelBox=await dialog.boundingBox();if(point.x<panelBox!.x||point.x>panelBox!.x+panelBox!.width||point.y<panelBox!.y||point.y>panelBox!.y+panelBox!.height)await page.mouse.click(point.x,point.y);
@@ -56,13 +57,15 @@ for(const [width,height] of [[320,844],[360,844],[390,844],[430,844],[844,390],[
     await page.getByRole('button',{name:'Close panel',exact:true}).click();await expect(dialog).not.toBeVisible();await expect(nav(page).getByRole('button',{name:'Buildings',exact:true})).toBeFocused();
     expect(await page.locator('.map-scroll').evaluate(el=>({x:el.scrollLeft,y:el.scrollTop}))).toEqual(position);
     for(const section of ['Founder','Notices','Settings']){
-      const button=nav(page).getByRole('button',{name:section,exact:true});await button.focus();await page.keyboard.press('Enter');await expect(dialog).toBeVisible();await expect(nav(page).locator(`[aria-label=${section}]`)).toHaveAttribute('aria-current','page');await expect(dialog.getByRole('button',{name:'Close panel',exact:true})).toBeFocused();
+      const button=nav(page).getByRole('button',{name:section,exact:true});if(testInfo.project.name==='mobile'){await button.tap();await expect(dialog).toBeVisible();await page.keyboard.press('Escape');await expect(button).toBeFocused();}await button.focus();await page.keyboard.press('Enter');await expect(dialog).toBeVisible();await expect(nav(page).locator(`[aria-label=${section}]`)).toHaveAttribute('aria-current','page');await expect(dialog.getByRole('button',{name:'Close panel',exact:true})).toBeFocused();
       if(section==='Founder'){await expect(dialog).toContainText('500.00 EC');await expect(dialog).toContainText('Progression will arrive');}
       if(section==='Notices')await expect(dialog).toContainText('No notifications yet');
       if(section==='Settings'){await expect(dialog.getByRole('button',{name:'Sign out',exact:true})).toBeVisible();await dialog.getByRole('button',{name:theme==='light'?'Use dark mode':'Use light mode',exact:true}).click();await expect(page.locator('html')).toHaveAttribute('data-theme',theme==='light'?'dark':'light');await dialog.getByRole('button',{name:theme==='light'?'Use light mode':'Use dark mode',exact:true}).click();}
       await accessible(page);await dialog.getByRole('button',{name:'Back to the district',exact:true}).scrollIntoViewIfNeeded();await expect(dialog.getByRole('button',{name:'Back to the district',exact:true})).toBeInViewport();await page.keyboard.press('Escape');await expect(dialog).not.toBeVisible();await expect(button).toBeFocused();
     }
     await page.getByRole('button',{name:'Whole district',exact:true}).click();await alignment(page);await shell(page,width,height);
+    const destination=page.getByRole('button',{name:'Property Exchange. Locked. Level 25',exact:true});await destination.scrollIntoViewIfNeeded();await destination.click();await page.getByRole('button',{name:'Locate on map',exact:true}).click();await expect(page.getByRole('dialog')).toHaveCount(0);await expect(destination).toBeFocused();
+
     if(height>500){await page.getByRole('button',{name:'Dismiss district tip',exact:true}).click();await expect(page.locator('.district-tip')).toHaveCount(0);await shell(page,width,height);}
     if(width===390){
       await page.addStyleTag({content:'.game-layout{--dock-space:116px}.district-nav{bottom:34px}'});await shell(page,width,height);expect(height-(await nav(page).boundingBox())!.y-(await nav(page).boundingBox())!.height).toBeGreaterThanOrEqual(32);

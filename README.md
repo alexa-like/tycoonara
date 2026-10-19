@@ -79,12 +79,16 @@ The original SVG district and four founder portraits were authored for this proj
 
 Stage 1 ends here. Stage 2 requires explicit approval.
 
-## Stage 1 district refinement
+## Stage 1 viewport and floating dock
 
-The district now opens in a fit-to-width overview. On narrow screens the numbered 44px map pins match an always-visible directory containing all eleven buildings. Explore streets switches to native two-axis touch scrolling, with bounded 100–150% zoom and a whole-district reset. Pin positions share the SVG coordinate system at every zoom. No gameplay progression or economy mutations have been added.
+The authenticated game owns the viewport (`100dvh` with a `100vh` fallback). Its compact header keeps the founder, capital, level, XP and reputation visible. The landing header and marketing footer are hidden only on the game route. All content fits the application shell; the map and panel bodies provide internal scrolling when needed.
 
-At widths through 800 CSS pixels, the four-item bottom navigation stays fixed to the viewport, respects the device safe area, and has reserved content clearance. Larger screens retain the sidebar. Native building dialogs retain Escape/focus return, allow short-screen scrolling, and add a locate-on-map action.
+A floating five-action dock is anchored at the bottom center on every screen: District, Buildings, Founder, Notices and Settings. It uses safe-area offsets, 44px minimum targets, accessible names, active indicators, press/focus feedback and reduced-motion support. Narrow phones hide text labels first. The map and its toolbar reserve clearance above the dock. Settings contains theme preferences and the existing secure sign-out action.
+
+The directory, founder details, notices and settings open in one native accessible modal. Building details appear at the right on desktop and in a bottom sheet on phones; short landscape screens use a larger overlay with internal scrolling. The browser makes the dock inert while a modal is open. Escape/close restore focus and the previous map position. All eleven building panels, gates, profile data and locate-on-map behavior remain available.
+
+Whole district fits the original island into the available map viewport while retaining 44px pins. On short screens the minimum-size canvas can scroll internally. Explore streets provides native two-axis touch panning and bounded 100–150% zoom. The SVG and hotspots share one coordinate system at every size. No economy or progression mutations have been added.
 
 The original 19.7KB SVG has eleven differentiated architectural designs, layered roofs, a riverside park, fountain square, street crossings, trees, lighting and benches. Regenerate it with `node scripts/draw-district.mjs`. All artwork remains static and uses no WebGL or raster downloads.
 
-Playwright checks 320/360/390/430px touch viewports and 1440px desktop in both themes: all eleven panels by pointer and keyboard, overview bounds, target overlap, constrained zoom alignment, genuine touch panning, fixed bottom-bar clearance, building-directory access, modal scrolling, and WCAG checks. The existing auth, onboarding and SQL/concurrency suites remain in CI. A separate screenshots job captures before/after against the reviewed Stage 1 baseline using synthetic fixture data only; no live account cookies or tokens are recorded.
+Playwright checks 320/360/390/430px phones, landscape, desktop, short laptop and desktop zoom-equivalent reflow through 200%, in both themes. Checks include no document scrolling, dock geometry and safe-area clearance, all five actions, native modal inertness, focus/Escape, internal scrolling, every building by touch/keyboard/directory, native panning, zoom alignment, theme persistence, reduced motion and Axe WCAG rules. Full auth, onboarding, RLS, ledger and concurrent-grant suites remain in CI. Before/after screenshots use production builds of the isolated visual app and synthetic data; real auth regressions run against isolated local Supabase.
